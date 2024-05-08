@@ -282,7 +282,7 @@ async def verify_email(user_id: UUID, token: str, db: AsyncSession = Depends(get
                         detail="Invalid or expired verification token")
 
 @router.put("/users/{user_id}/profile", response_model=UserResponse, name="update_user_profile", 
-            tags=["User Management Requires (Admin or Manager Roles)"])
+            tags=["User Self Management Requires (Authenticated, Admin, or Manager Roles)"])
 async def update_user_profile(
     user_id: UUID,
     user_update: UserSelfUpdate,
