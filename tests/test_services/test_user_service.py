@@ -161,3 +161,32 @@ async def test_unlock_user_account(db_session, locked_user):
     assert unlocked, "The account should be unlocked"
     refreshed_user = await UserService.get_by_id(db_session, locked_user.id)
     assert not refreshed_user.is_locked, "The user should no longer be locked"
+
+## NEW TESTS
+
+async def test_account_lock_after_max_failed_logins(db_session, verified_user):
+    max_login_attempts = get_settings().max_login_attempts
+    for _ in range(max_login_attempts):
+        await UserService.login_user(db_session, verified_user.email, "wrongpassword")
+    
+    is_locked = await UserService.is_account_locked(db_session, verified_user.email)
+    assert is_locked, "The account should be locked after the maximum number of failed login attempts."
+
+async def test_reset_password(db_session, user):
+    new_password = "NewPassword123!"
+    reset_success = await UserService.reset_password(db_session, user.id, new_password)
+    assert reset_success is True
+
+async def test_verify_email_with_token(db_session, user):
+    token = "valid_token_example"  # This should be set in your user setup if it depends on a real token
+    user.verification_token = token  # Simulating setting the token in the database
+    await db_session.commit()
+    result = await UserService.verify_email_with_token(db_session, user.id, token)
+    assert result is True
+
+async def test_unlock_user_account(db_session, locked_user):
+    unlocked = await UserService.unlock_user_account(db_session, locked_user.id)
+    assert unlocked, "The account should be unlocked"
+    refreshed_user = await UserService.get_by_id(db_session, locked_user.id)
+    assert not refreshed_user.is_locked, "The user should no longer be locked"
+

@@ -139,3 +139,37 @@ async def test_update_user_role(db_session: AsyncSession, user: User):
     await db_session.commit()
     await db_session.refresh(user)
     assert user.role == UserRole.ADMIN, "Role update should persist correctly in the database"
+
+## NEW Tests
+
+@pytest.mark.asyncio
+async def test_update_user_nickname(db_session: AsyncSession, user: User):
+    """
+    Tests updating the user's nickname and ensuring it persists correctly.
+    """
+    new_nickname = "new_nickname"
+    user.nickname = new_nickname
+    await db_session.commit()
+    await db_session.refresh(user)
+    assert user.nickname == new_nickname, "Nickname update should persist correctly in the database"
+
+@pytest.mark.asyncio
+async def test_update_user_email(db_session: AsyncSession, user: User):
+    """
+    Tests updating the user's email and ensuring it persists correctly.
+    """
+    new_email = "new_email@example.com"
+    user.email = new_email
+    await db_session.commit()
+    await db_session.refresh(user)
+    assert user.email == new_email, "Email update should persist correctly in the database"
+
+@pytest.mark.asyncio
+async def test_delete_user_account(db_session: AsyncSession, user: User):
+    """
+    Tests deleting the user's account and ensuring it is removed from the database.
+    """
+    await db_session.delete(user)
+    await db_session.commit()
+    deleted_user = await db_session.get(User, user.id)
+    assert deleted_user is None, "User account should be deleted from the database"

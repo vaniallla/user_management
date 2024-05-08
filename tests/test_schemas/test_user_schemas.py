@@ -108,3 +108,25 @@ def test_user_base_url_invalid(url, user_base_data):
     user_base_data["profile_picture_url"] = url
     with pytest.raises(ValidationError):
         UserBase(**user_base_data)
+
+## NEW TESTS
+
+def test_user_base_email_invalid_format(user_base_data):
+    user_base_data["email"] = "invalid_email_format"
+    with pytest.raises(ValidationError):
+        UserBase(**user_base_data)
+
+def test_user_base_profile_picture_url_invalid(user_base_data):
+    user_base_data["profile_picture_url"] = "invalid_url"
+    with pytest.raises(ValidationError):
+        UserBase(**user_base_data)
+
+def test_user_base_github_profile_url_invalid(user_base_data):
+    user_base_data["github_profile_url"] = "invalid_url"
+    with pytest.raises(ValidationError):
+        UserBase(**user_base_data)
+
+def test_user_response_invalid_id_format(user_response_data):
+    user_response_data["id"] = "invalid_id_format"
+    with pytest.raises(ValidationError):
+        UserResponse(**user_response_data)
