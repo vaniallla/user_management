@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_email_service, get_settings
 from app.models.user_model import User
-from app.schemas.user_schemas import UserCreate, UserUpdate
+from app.schemas.user_schemas import UpgradeUser, UserCreate, UserUpdate
 from app.utils.nickname_gen import generate_nickname
 from app.utils.security import generate_verification_token, hash_password, verify_password
 from uuid import UUID
@@ -78,6 +78,25 @@ class UserService:
             return new_user
         except ValidationError as e:
             logger.error(f"Validation error during user creation: {e}")
+            return None
+
+    @classmethod
+    async def upgrade(cls, session: AsyncSession, user_id: UUID, upgrade_data: Dict[str, bool]) -> Optional[User]:
+        try:
+            validated_data = UpgradeUser(**upgrade_data).model_dump(exclude_unset=True)
+            validated_data['is_professional'] = True
+            query = update(User).where(User.id == user_id).values(**validated_data).execution_options(synchronize_session="fetch")
+            await cls._execute_query(session, query)
+            updated_user = await cls.get_by_id(session, user_id)
+            if updated_user:
+                session.refresh(updated_user)  # Explicitly refresh the updated user object
+                logger.info(f"User {user_id} updated successfully.")
+                return updated_user
+            else:
+                logger.error(f"User {user_id} not found after update attempt.")
+            return None
+        except Exception as e:  # Broad exception handling for debugging
+            logger.error(f"Error during user update: {e}")
             return None
 
     @classmethod

@@ -69,6 +69,9 @@ class UserSelfUpdate(BaseModel):
         if not any(values.values()):
             raise ValueError("At least one field must be provided for update")
         return values
+    
+class UpgradeUser(BaseModel):
+    is_professional: bool = Field(default=True, example=True)
 
 class UserResponse(UserBase):
     id: uuid.UUID = Field(..., example=uuid.uuid4())

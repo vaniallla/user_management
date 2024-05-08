@@ -34,7 +34,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_db, get_email_service, require_role
 from app.schemas.token_schema import TokenResponse
-from app.schemas.user_schemas import UserCreate, UserListResponse, UserResponse, UserSelfUpdate, UserUpdate
+from app.schemas.user_schemas import UpgradeUser, UserCreate, UserListResponse, UserResponse, UserSelfUpdate, UserUpdate
 from app.services.user_service import UserService
 from app.services.jwt_service import create_access_token
 from app.utils.link_generation import create_user_links, generate_pagination_links
@@ -320,27 +320,23 @@ async def update_user_profile(
         links=create_user_links(updated_user.id, request)
     )
 
-# @router.put("/users/{user_id}/upgrade/", response_model=User)
-# async def upgrade_user_to_professional(
-#     user_id: str,
-#     updated_user: User,
-#     current_user_role: UserRole = Depends(get_user_role)
-# ):
-#     """function upgrades user to professional status"""
-#     # Check if the current user is authorized to perform this action
-#     if current_user_role not in [UserRole.MANAGER, UserRole.ADMIN]:
-#         raise HTTPException(status_code=403, detail="Unauthorized to perform this action.")
+@router.put("/users/{user_id}/upgrade/", response_model=UserResponse)
+async def upgrade_user_to_professional(
+    user_id: UUID,
+    upgrade_user: UpgradeUser,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+    current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))
+):
+    """function upgrades user to professional status"""
+    user_data = upgrade_user.model_dump(exclude_unset=True)
+    # Perform the upgrade
+    user_data["professional_status_updated_at"] = datetime.now()  # Update timestamp
+    updated_user = await UserService.upgrade(db, user_id, user_data)
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-#     # Check if the user being upgraded exists
-#     user = await UserService.get_user_by_id(user_id)
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found.")
-
-#     # Perform the upgrade
-#     user.is_professional = True
-#     user.professional_status_updated_at = datetime.now()  # Update timestamp
-
-#     # Update the user
-#     updated_user = await UserService.update_user(user_id, **user.dict(exclude_unset=True))
-
-#     return updated_user
+    return UserResponse.model_construct(
+        is_professional=updated_user.is_professional
+    )
